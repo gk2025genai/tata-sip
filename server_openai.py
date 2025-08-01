@@ -10,7 +10,7 @@ import subprocess
 from websocket import create_connection
 import socks
 import uuid
-
+from ulaw_debug import save_ulaw_raw
 # Set up SOCKS5 proxy (if needed)
 # socket.socket = socks.socksocket
 
@@ -44,6 +44,8 @@ async def handler(websocket, path):
                 print(f"[Event] Received Audio from {client_id}")
                 if audio_payload:
                     audio_bytes = base64.b64decode(audio_payload)
+                    save_ulaw_raw("output_ulaw.ulaw", audio_bytes)
+                    print(f"[Debug] Saved u-law data: {len(audio_bytes)} samples")
                     openai_handler.add_audio_chunk(audio_bytes)
                     print(f"[Event] Sent {len(audio_bytes)} bytes to OpenAI for client {client_id}")
             # elif event_type == "dtmf":

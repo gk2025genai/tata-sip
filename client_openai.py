@@ -13,78 +13,74 @@ CHUNK_DURATION = 2  # seconds to record per push-to-talk
 received_chunks = []
 
 def pcm16_to_ulaw(pcm16_array):
-    """Convert PCM16 audio to u-law format"""
-    # Normalize to [-1, 1]
-    normalized = pcm16_array.astype(np.float32) / 32768.0
+    """Convert PCM16 audio to u-law format using ITU-T G.711 standard"""
+    # Constants for u-law encoding
+    BIAS = 0x84
+    CLIP = 32635
     
-    # Apply u-law encoding
-    ulaw_array = np.zeros_like(normalized, dtype=np.uint8)
+    def linear_to_ulaw(sample):
+        """Convert a single PCM16 sample to u-law"""
+        # Get sign and magnitude
+        sign = 0x80 if sample < 0 else 0x00
+        if sample < 0:
+            sample = -sample
+        
+        # Clip the sample
+        sample = min(sample, CLIP)
+        
+        # Add bias
+        sample = sample + BIAS
+        
+        # Find the segment
+        segment = 7
+        for i in range(7):
+            if sample <= (0xFF << i):
+                segment = i
+                break
+        
+        # Find quantization value
+        quantization = (sample >> (segment + 3)) & 0x0F
+        
+        # Combine sign, segment, and quantization
+        ulaw = sign | (segment << 4) | quantization
+        
+        # Complement for transmission
+        return (~ulaw) & 0xFF
     
-    for i, sample in enumerate(normalized):
-        # Clamp to [-1, 1]
-        sample = np.clip(sample, -1.0, 1.0)
-        
-        # u-law encoding
-        sign = 1 if sample >= 0 else 0
-        sample = abs(sample)
-        
-        if sample < 1/255:
-            ulaw_array[i] = 0
-        else:
-            # Find the segment
-            segment = 1
-            while segment < 8 and sample >= (1 << segment) / 256:
-                segment += 1
-            
-            # Calculate quantization level
-            quantization = int((sample * 256 / (1 << segment)) * 16)
-            quantization = min(quantization, 15)
-            
-            # Combine sign, segment, and quantization
-            ulaw_array[i] = (sign << 7) | ((8 - segment) << 4) | quantization
+    # Apply u-law encoding to each sample
+    ulaw_array = np.array([linear_to_ulaw(int(sample)) for sample in pcm16_array], dtype=np.uint8)
     
     return ulaw_array
 
 def ulaw_to_pcm16(ulaw_array):
-    """Convert u-law audio to PCM16 format"""
-    # u-law decoding table
-    ulaw_table = [
-        -32124, -31100, -30076, -29052, -28028, -27004, -25980, -24956,
-        -23932, -22908, -21884, -20860, -19836, -18812, -17788, -16764,
-        -15996, -15484, -14972, -14460, -13948, -13436, -12924, -12412,
-        -11900, -11388, -10876, -10364, -9852, -9340, -8828, -8316,
-        -7932, -7676, -7420, -7164, -6908, -6652, -6396, -6140,
-        -5884, -5628, -5372, -5116, -4860, -4604, -4348, -4092,
-        -3900, -3772, -3644, -3516, -3388, -3260, -3132, -3004,
-        -2876, -2748, -2620, -2492, -2364, -2236, -2108, -1980,
-        -1884, -1820, -1756, -1692, -1628, -1564, -1500, -1436,
-        -1372, -1308, -1244, -1180, -1116, -1052, -988, -924,
-        -876, -844, -812, -780, -748, -716, -684, -652,
-        -620, -588, -556, -524, -492, -460, -428, -396,
-        -372, -356, -340, -324, -308, -292, -276, -260,
-        -244, -228, -212, -196, -180, -164, -148, -132,
-        -120, -112, -104, -96, -88, -80, -72, -64,
-        -56, -48, -40, -32, -24, -16, -8, 0,
-        32124, 31100, 30076, 29052, 28028, 27004, 25980, 24956,
-        23932, 22908, 21884, 20860, 19836, 18812, 17788, 16764,
-        15996, 15484, 14972, 14460, 13948, 13436, 12924, 12412,
-        11900, 11388, 10876, 10364, 9852, 9340, 8828, 8316,
-        7932, 7676, 7420, 7164, 6908, 6652, 6396, 6140,
-        5884, 5628, 5372, 5116, 4860, 4604, 4348, 4092,
-        3900, 3772, 3644, 3516, 3388, 3260, 3132, 3004,
-        2876, 2748, 2620, 2492, 2364, 2236, 2108, 1980,
-        1884, 1820, 1756, 1692, 1628, 1564, 1500, 1436,
-        1372, 1308, 1244, 1180, 1116, 1052, 988, 924,
-        876, 844, 812, 780, 748, 716, 684, 652,
-        620, 588, 556, 524, 492, 460, 428, 396,
-        372, 356, 340, 324, 308, 292, 276, 260,
-        244, 228, 212, 196, 180, 164, 148, 132,
-        120, 112, 104, 96, 88, 80, 72, 64,
-        56, 48, 40, 32, 24, 16, 8, 0
-    ]
+    """Convert u-law audio to PCM16 format using ITU-T G.711 standard"""
+    # Constants for u-law decoding
+    BIAS = 0x84
     
-    # Decode u-law to PCM16
-    pcm16_array = np.array([ulaw_table[b] for b in ulaw_array], dtype=np.int16)
+    def ulaw_to_linear(ulaw_byte):
+        """Convert a single u-law byte to PCM16 sample"""
+        # Complement the byte (undo transmission complement)
+        ulaw_byte = (~ulaw_byte) & 0xFF
+        
+        # Extract sign, segment, and quantization
+        sign = ulaw_byte & 0x80
+        segment = (ulaw_byte >> 4) & 0x07
+        quantization = ulaw_byte & 0x0F
+        
+        # Calculate linear value
+        linear = (quantization << 3) + BIAS
+        linear <<= segment
+        
+        # Subtract bias and apply sign
+        linear -= BIAS
+        if sign:
+            linear = -linear
+        
+        # Clip to 16-bit range
+        return max(-32768, min(32767, linear))
+    
+    # Apply u-law decoding to each byte
+    pcm16_array = np.array([ulaw_to_linear(int(byte)) for byte in ulaw_array], dtype=np.int16)
     
     return pcm16_array
 
@@ -129,6 +125,7 @@ async def main():
             input("Press Enter to record and send audio (Ctrl+C to quit)...")
             audio_np = await record_audio()
             b64_audio = encode_audio(audio_np)
+            play_audio(audio_np)
             media_msg = {
                 "event": "media",
                 "streamSid": "1234567890",
