@@ -14,11 +14,6 @@ import uuid
 # Set up SOCKS5 proxy (if needed)
 # socket.socket = socks.socksocket
 
-# Audio configuration
-CHUNK_SIZE = 1024
-RATE = 24000
-FORMAT = 16  # pcm16
-
 # Remove OpenAI-related globals from this file
 # Remove openai_connections, audio_buffers, stop_events, API_KEY, WS_URL from this file
 from openai_handler import OpenAIHandler
