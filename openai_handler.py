@@ -70,7 +70,7 @@ class OpenAIHandler:
                 socket.getaddrinfo = original_getaddrinfo
                 
         except Exception as e:
-            print(f'[OpenAI] Failed to connect for client {self.client_id}: {e}')
+            print(f'[<=====OpenAI-Exception-7=====>] Failed to connect for client {self.client_id}: {e}')
             return False
     
     async def send_session_config(self):
@@ -144,7 +144,7 @@ class OpenAIHandler:
             self.ws.send(json.dumps(session_config))
             print(f'[OpenAI] Session config sent for client {self.client_id}')
         except Exception as e:
-            print(f'[OpenAI] Failed to send session config for client {self.client_id}: {e}')
+            print(f'[<=====OpenAI-Exception-8=====>] Failed to send session config for client {self.client_id}: {e}')
 
     async def send_mark(self, name):
         event = {
@@ -168,7 +168,7 @@ class OpenAIHandler:
            await self.client_websocket.send(json.dumps(event))
            print(f"[WebSocket] Sent media for client {self.client_id}, chunk {chunk}")
        except Exception as e:
-           print(f"[WebSocket] Failed to send media for client {self.client_id}: {e}")
+           print(f"[WebSocket-Exception-1] Failed to send media for client {self.client_id}: {e}")
 
     async def send_clear(self):
         payload = {
@@ -225,11 +225,11 @@ class OpenAIHandler:
                         self.handle_function_call(data)
                     
                 except Exception as e:
-                    print(f'[OpenAI] Error receiving audio for client {self.client_id}: {e}')
+                    print(f'[<=====OpenAI-Exception-9=====>] Error receiving audio for client {self.client_id}: {e}')
                     break
                     
         except Exception as e:
-            print(f'[OpenAI] Exception in receive thread for client {self.client_id}: {e}')
+            print(f'[<=====OpenAI-Exception-10=====>] Exception in receive thread for client {self.client_id}: {e}')
         finally:
             print(f'[OpenAI] Exiting receive thread for client {self.client_id}')
     
@@ -245,14 +245,12 @@ class OpenAIHandler:
                         self.ws.send(message)
                         print(f'[OpenAI] Sent {len(audio_chunk)} bytes to OpenAI for client {self.client_id}')
                 except Exception as e:
-                    print(f'[OpenAI] Error sending audio for client {self.client_id}: {e}')
+                    print(f'[<=====OpenAI-Exception=====>] Error sending audio for client {self.client_id}: {e}')
                     break
                 time.sleep(0.01)  # Small delay to prevent busy waiting
         except Exception as e:
-            print(f'[OpenAI] Exception in send thread for client {self.client_id}: {e}')
-        finally:
-            print(f'[OpenAI] Exiting send thread for client {self.client_id}')
-    
+            print(f'[<=====OpenAI-Exception-2=====>] Exception in send thread for client {self.client_id}: {e}')
+        
     def handle_function_call(self, event_json):
         """Handle function calls from OpenAI"""
         try:
@@ -282,7 +280,7 @@ class OpenAIHandler:
                     print(f"[OpenAI] City not provided for get_weather for client {self.client_id}")
                     
         except Exception as e:
-            print(f"[OpenAI] Error handling function call for client {self.client_id}: {e}")
+            print(f"[<=====OpenAI-Exception-3=====>] Error handling function call for client {self.client_id}: {e}")
     
     def send_function_call_result(self, result, call_id):
         """Send function call result back to OpenAI"""
@@ -303,7 +301,7 @@ class OpenAIHandler:
             rp_json = {"type": "response.create"}
             self.ws.send(json.dumps(rp_json))
         except Exception as e:
-            print(f"[OpenAI] Failed to send function call result for client {self.client_id}: {e}")
+            print(f"[<=====OpenAI-Exception-4=====>] Failed to send function call result for client {self.client_id}: {e}")
     
     def get_weather(self, city):
         """Simulate weather API call"""
@@ -319,7 +317,7 @@ class OpenAIHandler:
             # The audio is already in u-law format from the client
             self.audio_queue.put(audio_bytes)
         except Exception as e:
-            print(f'[OpenAI] Error adding audio chunk for client {self.client_id}: {e}')
+            print(f'[<=====OpenAI-Exception-5=====>] Error adding audio chunk for client {self.client_id}: {e}')
     
     def get_audio_buffer(self):
         """Get current audio buffer for playback"""
@@ -336,4 +334,4 @@ class OpenAIHandler:
             try:
                 self.ws.close()
             except Exception as e:
-                print(f'[OpenAI] Error closing connection for client {self.client_id}: {e}') 
+                print(f'[<=====OpenAI-Exception-6=====>] Error closing connection for client {self.client_id}: {e}') 
