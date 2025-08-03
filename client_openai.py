@@ -108,7 +108,7 @@ def play_audio(audio_np):
     sd.wait()
 
 async def main():
-    host = sys.argv[1] if len(sys.argv) > 1 else "localhost"
+    host = sys.argv[1] if len(sys.argv) > 1 else "ec2-3-86-47-105.compute-1.amazonaws.com"
     port = sys.argv[2] if len(sys.argv) > 2 else "8766"
     uri = f"ws://{host}:{port}"
     print(f"[Client] Connecting to {uri}")

@@ -1,6 +1,7 @@
-websockets
-websocket-client
-PySocks
-numpy
-sounddevice
-python-dotenv
+websockets==13.1
+websocket-client==1.8.0
+PySocks==1.7.1
+numpy==2.3.1
+sounddevice==0.5.2
+python-dotenv==1.0.1
+PyAudio==0.2.14
